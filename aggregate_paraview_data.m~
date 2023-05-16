@@ -150,9 +150,8 @@ for h = 1:length(HABs)
    max_soot_cells(h,2) = cells_at_HAB.X0(max_soot_cell);
    max_soot_cells(h,3) = cells_at_HAB.X1(max_soot_cell);
    
-   max_soot_cells(h,4) = moments(max_soot_cell,3);
-   max_soot_cells(h,5) = (cells_at_HAB.X1(max_soot_cell)/...
-       (moments(max_soot_cell,3)*cells_at_HAB.X0(max_soot_cell))*(6/pi))^(1/3);
+   max_soot_cells(h,4) = moments(max_soot_cell,3)/cells_at_HAB.X0(max_soot_cell);
+   max_soot_cells(h,5) = moments(max_soot_cell,2)/(moments(max_soot_cell,3)*moments(max_soot_cell,))
    
 %    max_soot_cells(h,4) = moments(cells_at_HAB.CellID,1);
 %    max_soot_cells(h,5) = moments(cells_at_HAB.CellID,2);
