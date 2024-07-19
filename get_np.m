@@ -12,8 +12,9 @@ end
 
 
 for i = 1:m - index_crit
-%     disp(psd_col_headings{i})
-    off = m + i;
+    
+    off = m + i+1;
+%     disp(psd_col_headings{off})
     np(index_crit+i) = cell_scalars.(convertCharsToStrings(psd_col_headings{off}(:)))(1) ;
 end
 

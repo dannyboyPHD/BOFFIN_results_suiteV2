@@ -3,12 +3,12 @@
 %
 %% set up directories and output
 
-raw_res_dir = './';
+raw_res_dir = './NS_tf_ISAFSAF/';
 
-raw_data = 'centreline_2900000.csv';
-numbersteps = 2900000;
+raw_data = 'NS_ISAF_2700000_centreline.csv';
+numbersteps = 2410000;
 
-output_dir = './output';
+output_dir = './NS_tf_ISAFSAF';
 overwrite = true;
 
 if(~exist(output_dir,'dir') && overwrite == true)
@@ -100,17 +100,59 @@ fv_error_calc(exp_soot_volfrac, z, soot_vol_fraction*10^6)
 
 
 %% save figures
-save = true;
+s = true;
 
-if(save) 
+if(s) 
    if(strcmp(configuration,'centreline'))
        
-       savefig(h,strcat('centreline_res_',num2str(numbersteps)));
+       savefig(h,strcat(raw_res_dir,strcat('centreline_sil',num2str(numbersteps))));
    end
     
 end
+%%
+
+if not(isfolder(raw_res_dir))
+    mkdir(raw_res_dir)
+end
+
+disp(strcat(raw_res_dir,'centreline'));
+
+save(strcat(raw_res_dir,'centreline'));
+%%
+
+%VF
+
+exp_soot_volfrac = dlmread(strcat(exp_res_dir,'/central_line_fv_exp'));% note z in cm 
+exp_soot_volfrac(:,1) = exp_soot_volfrac(:,1)/100;% cm --> m
+% semilogy(exp_soot_volfrac(:,1),exp_soot_volfrac(:,2),'or');
+hold on
+
+tol = 0.1;
+
+sp = spap2(20,5,z, soot_vol_fraction*10^6);
+fnplt(sp)
+
+axis([0.01,0.080,10^-3,10^2])
 
 
-    
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
