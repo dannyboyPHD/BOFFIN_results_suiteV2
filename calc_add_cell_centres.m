@@ -1,4 +1,4 @@
-function [cell_data] = calc_add_cell_centres(total_cells,offsets, cell_data,cell_info)
+function [cell_data] = calc_add_cell_centres(total_cells,offsets, cell_data,grid,cell_info)
 
 for cell_id = 1:total_cells
     

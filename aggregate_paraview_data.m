@@ -1,11 +1,14 @@
 %% read csv
 clear all
 %%
+
 test_run_name = 'IS_inf_fusing';
 n_steps = '2125000';
 
-cell_data = readtable('celldata_IS_inf_fusing.csv');
-grid = readtable('grid_NS_silica.csv');
+cell_data = readtable('./raw_cell_data/celldata_IS_inf_fusing.csv');
+grid = readtable('./raw_cell_data/grid_NS_silica.csv');
+
+flame = 'NS'; %  NS, IS, S
 
 %% grid size
 NX = 200;
@@ -16,6 +19,7 @@ total_cells = NX*NY*NZ;
 
 cell_info = zeros(total_cells, 26);
 offsets = [1,NX+1, NX+2, (NX+1)*(NY+1),(NX+1)*(NY+1)+1, (NX+1)*(NY+1) + (NX+1), (NX+1)*(NY+1) + (NX+2)];
+
 %% add cellcentre cols to cell_data
 
 cellcentre_0 = zeros(total_cells,1);
@@ -28,49 +32,13 @@ cell_data = addvars(cell_data,cellcentre_2);
 
 %%
 % row_no = true cellid +1
-cell_data = calc_add_cell_centres(total_cells,offsets,cell_data, cell_info);
-
-% for cell_id = 1:total_cells
-% 
-%     anchor = [cell_data.StructuredCoordinates_0(cell_id),cell_data.StructuredCoordinates_1(cell_id),cell_data.StructuredCoordinates_2(cell_id)];
-%     % find corresponding point data
-% 
-%     p1 = (grid.StructuredCoordinates_0 == anchor(1)) & (grid.StructuredCoordinates_1 == anchor(2)) & (grid.StructuredCoordinates_2 == anchor(3));
-%     p1 = grid(p1,:);
-% 
-%     anchor_ID = p1.PointID;
-% 
-%     cell_info(cell_id,1:3) = [p1.Points_0,p1.Points_1,p1.Points_2];
-%     
-% 
-% 
-%     for o = 1:length(offsets)
-%         p = grid.PointID == anchor_ID + offsets(o);
-%         p = grid(p,:);
-% 
-%         cell_info(cell_id,3*o + 1:3*o + 3) = [p.Points_0, p.Points_1,p.Points_2]; 
-%     end
-%     
-%     % calculate cell centres and add new column to table 
-%     % TO DO (1)
-%     
-%     
-%     
-%     cell_info(cell_id,25) = cell_info(cell_id,8) - cell_info(cell_id,2);
-%     cell_info(cell_id,26) = cell_info(cell_id,8)^2 - cell_info(cell_id,2)^2;
-%     
-%     [x,y,z] = get_cellcentre(cell_info(cell_id,1:3),cell_info(cell_id,4:6),cell_info(cell_id,7:9),cell_info(cell_id,13:15));
-%     cell_data.cellcentre_0(cell_id) = x;
-%     cell_data.cellcentre_1(cell_id) = y;
-%     cell_data.cellcentre_2(cell_id) = z;
-%     
-% end
+cell_data = calc_add_cell_centres(total_cells,offsets,cell_data, grid,cell_info);
 
 %%
+
 % PSD parameters
 m = 60;
 index_crit = 13;
-
 
 % psds = zeros()
 ni = zeros(total_cells,m);
@@ -81,77 +49,33 @@ dps = zeros(total_cells,2);
 
 [v,dv,v_m, psd_headings] = get_pbe_grid_info(cell_data);
 
-
 for cell_id = 1:total_cells
     ni(cell_id,:) = get_agg_psd(cell_id,index_crit,m,psd_headings,cell_data);
     np(cell_id,:) = get_np(cell_id,index_crit,m,psd_headings,cell_data);
     rho(cell_id) = get_rho(cell_id,cell_data);
   
-    moments(cell_id,1) = sum(  rho(cell_id)*ni(cell_id,:)'.*dv(:)        ); % Mo, zeroth moment
+    moments(cell_id,1) = sum(  rho(cell_id)*ni(cell_id,:)'.*dv(:)         );  % Mo, zeroth moment
     moments(cell_id,2) = sum(  rho(cell_id)*ni(cell_id,:)'.*dv(:).*v_m(:) ); % M1, first moment
     moments(cell_id,3) = sum(  rho(cell_id)*np(cell_id,:)'.*dv(:)         ); % Mp,o
 end
 
 %% calc integrated Soot VF
 % get x positions: HAB (m)
-HABs = unique(cell_data.cellcentre_0);
 
+HABs = unique(cell_data.cellcentre_0);
 int_SVF = calc_ISVF(HABs,cell_data, moments,cell_info);
 
-% int_SVF = zeros(length(HABs),1);
-% 
-% for h = 1:length(HABs)
-%    HAB = HABs(h);
-%    
-%    rowfilter_at_HAB = cell_data.cellcentre_0 == HAB;
-%    cells_at_HAB = cell_data(rowfilter_at_HAB,:);
-%    
-%    cell_ids = cells_at_HAB.CellID;
-%    tmp_SVF = 0;
-% %  
-%    for c = 1:length(cell_ids)
-%       tmp_SVF = tmp_SVF + 0.5*cell_info(cell_ids(c)+1,26)*moments(cell_ids(c)+1,2);
-%       
-% %       cells_at_HAB.X1(c);cells_at_HAB.X1(c);
-%       
-% %       cells_at_HAB.X1(c);
-% %     ;
-%    end
-% %    cells_at_HAB.X1(c)
-%    int_SVF(h) = tmp_SVF;
-%    
-% end
-%%
-
-exp_intSVF = dlmread('./Sun_results/fv_integrated');
-
-% exp_intSVF = dlmread('./Sun_results/Incipient_Int_fv');
-% exp_intSVF = dlmread('./Sun_results/smoking_int_fv');
-
-%%
-plot(HABs, 2*pi*int_SVF,'r');
-%%
-hold on
-plot(exp_intSVF(:,1)/100, exp_intSVF(:,2)*10^-4,'o')
-
-
 %% find annulus of max soot
-
-% [max_soot, maxsoot_cell] = max(moments(:,2)); 
-% 
-% radius_of_max_soot = cell_data.cellcentre_1(maxsoot_cell);
-% % radius_of_max_soot = 0.0026;
 %--------------------------------------------
 % dp calculation method
 %--------------------------------------------
 dp_select = 3;
+
 %1 = volume fraction based: M1/Mp,o
 %2 = Surface area based:    Surface Area/Mp,o
-
-
-
 %3 = 6 Vn/An Diemer approach: 6Vn/An based on point cntact assumption
-%------------------------------------------
+% Assumed kf = 1.84, Df = 1.8 (constant)
+
 % extract all cells with that radius
 
 HABs = unique(cell_data.cellcentre_0);
@@ -161,96 +85,6 @@ max_soot_cells = zeros(length(HABs),7);
 
 [max_soot_cells,nav_agg_only] = get_path_max_soot(index_crit,HABs,m,ni,np,rho,dv, cell_data,moments,dp_select);
 
-
-% nav_agg_only = zeros(length(HABs),1);
-% 
-% for h = 1:length(HABs)
-%    HAB = HABs(h);
-%    
-%    rowfilter_at_HAB = cell_data.cellcentre_0 == HAB;
-%    
-% %        & cell_data.cellcentre_1 == radius_of_max_soot;
-%    
-%    cells_at_HAB = cell_data(rowfilter_at_HAB,:);
-%    
-%    [SVF,max_soot_cell] = max(cells_at_HAB.X1);
-%    
-%    max_soot_cells(h,1) = cells_at_HAB.CellID(max_soot_cell);
-%    max_soot_cells(h,2) = cells_at_HAB.X0(max_soot_cell);
-%    max_soot_cells(h,3) = cells_at_HAB.X1(max_soot_cell);
-%    
-%    max_soot_cells(h,4) = moments(max_soot_cells(h,1)+1,3)/moments(max_soot_cells(h,1)+1,1);
-%    max_soot_cells(h,5) = moments(max_soot_cells(h,1)+1,2);
-%    max_soot_cells(h,6) = moments(max_soot_cells(h,1)+1,1);
-%    
-%    ni_tmp = sum(rho(max_soot_cells(h,1)+1)*ni(max_soot_cells(h,1)+1,index_crit:end)'.*dv(index_crit:end));
-%    np_tmp = sum(rho(max_soot_cells(h,1)+1)*np(max_soot_cells(h,1)+1,index_crit:end)'.*dv(index_crit:end));
-%    
-%    nav_tmp = sum(np(max_soot_cells(h,1)+1,:)./ni(max_soot_cells(h,1)+1,:))/m;
-%    
-% %    nav_agg_only(h) = np_tmp/ni_tmp;
-%      nav_agg_only(h) = cells_at_HAB.X1(max_soot_cell)/cells_at_HAB.X0(max_soot_cell);
-%    
-% %    moments(max_soot_cells(h,1)+1,2);
-% %    max_soot_cells(h,4) = moments(cells_at_HAB.CellID,1);
-% %    max_soot_cells(h,5) = moments(cells_at_HAB.CellID,2);
-%     dp_av = 0;
-%     
-%     kf = 1.94;
-%     Df = 1.8;
-% 
-% % 
-% %     for i = 1:m
-% %         np_i = np(max_soot_cell,i);
-% %         ni_i = ni(max_soot_cell,i);
-% %         nav = np_i/(ni_i + 1*10^-22);
-% %         vm = v_m(i);
-% %         vp = vm/nav;
-% %         
-% %         dp_tmp = (6*vp/pi)^(1/3);
-% % %         
-% % %         dg = dp_tmp*(vm/(vp*kf))^(1/Df);
-% % %         
-% % %         
-% % %         dp = dg*(nav/kf)^Df;
-% % %         
-% % %         
-% % %         dp_av = dp_av + (dp*rho(max_soot_cell)*ni(max_soot_cell,i)*dv(i))...
-% % %             /moments(max_soot_cell,1);
-% %         
-% %     end 
-% 
-% 
-% %--------------------------------------------------------------------------
-%     % volume fraction based calculation vp_average = M1/Mp,o
-% %--------------------------------------------------------------------------
-% if(dp_select == 1)
-%     vp = moments(max_soot_cells(h,1)+1,2)/moments(max_soot_cells(h,1)+1,3);
-%     max_soot_cells(h,7) = (6*vp/pi)^(1/3);
-%     
-% %--------------------------------------------------------------------------
-%     % surface area based calculation ap_average = SA/Mp,o
-% %--------------------------------------------------------------------------
-% elseif(dp_select ==2)
-%     ap = (cells_at_HAB.Surface_area(max_soot_cell))/moments(max_soot_cells(h,1)+1,3);
-%     max_soot_cells(h,7) = (ap/pi)^0.5;
-%     
-% %--------------------------------------------------------------------------
-%     % Volume Fraction to Surface Area  
-% %--------------------------------------------------------------------------
-% elseif(dp_select == 3)
-%     Vn = (moments(max_soot_cells(h,1)+1,2)/moments(max_soot_cells(h,1)+1,1));
-%     An = cells_at_HAB.Surface_area(max_soot_cell)/moments(max_soot_cells(h,1)+1,1);
-%     max_soot_cells(h,7) = 6*Vn/An;
-% 
-% 
-% 
-%     
-% end    
-%     
-% %     max_soot_cells(h,7) = moments(max_soot_cell,1)*moments(max_soot_cell,2)/moments(max_soot_cell,3);
-%    
-% end
 
 %% plot max annulus line
 dp_av_exp = dlmread('./Sun_results/max_dp');% NS flame
@@ -281,8 +115,6 @@ tol = 0.1;
 
 sp = spap2(20,5,HABs, max_soot_cells(:,4));
 fnplt(sp)
-
-
 
 % semilogy(HABs, max_soot_cells(:,4),'r');
 % fnplt(sp,2)
@@ -463,11 +295,12 @@ plot(acet_radial(:,1,5),acet_radial(:,2,5),'b-');
 
 %% save matlab objs
 
-if not(isfolder(test_run_name))
-    mkdir(test_run_name)
+processed_results_dir = './processed_results/';
+if not(isfolder(strcat(processed_results_dir,test_run_name)))
+    mkdir(strcat(processed_results_dir,test_run_name))
 end
 
-save(strcat(strcat('./',test_run_name),'/',test_run_name,n_steps));
+save(strcat(strcat(processed_results_dir,test_run_name),'/',test_run_name,n_steps));
 
 %% get psd at cell id
 
@@ -540,17 +373,4 @@ for c = 1:size(max_soot_cells,1)
        close all
    end
 end
-
-
-
-
-
-
-
-
-
-
-
-
-
 
