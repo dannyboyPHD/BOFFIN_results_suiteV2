@@ -9,21 +9,12 @@ end
 
 %% read files, set names
 
-load_from_matfile = true;
+test_run_name = 'IS_inf_fusing';
+n_steps = '2125000';
 
-test_run_name = 'NS_tf_ISAFSAF';
-n_steps = '_2700000';
+cell_data = readtable('./raw_cell_data/celldata_IS_inf_fusing.csv');
+grid = readtable('./raw_cell_data/grid_NS_silica.csv');
 
-
-%%
-
-if ~load_from_matfile
-    cell_data = readtable('./raw_cell_data/celldata_IS_inf_fusing.csv');
-    grid = readtable('./raw_cell_data/grid_NS_silica.csv');
-else
-    load(strcat('./processed_results/','NS_tf_ISAFSAF2700000.mat'));
-end
-    
 flame = 'NS'; %  NS, IS, S
 
 %% grid size

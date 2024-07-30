@@ -1,0 +1,118 @@
+
+flame_viewer(sim_results,disp_names,flame,X,Y,Z);
+
+
+function flame_viewer(sim_results, disp_names,flame,X,Y,Z)
+
+fig = uifigure;
+gl = uigridlayout(fig,[3,3]);
+gl.RowHeight = {50,'1x','1x'};
+gl.ColumnWidth = {'1x','1x','1x'};
+
+% flame plot 
+flame_ax = uiaxes(gl);
+flame_ax.Layout.Row = [2,3];
+flame_ax.Layout.Column = 1;
+
+s = pcolor(flame_ax,X,Y,Z);
+set(s, 'EdgeColor', 'none');
+s.FaceColor = 'interp';
+xlabel(flame_ax,'r (m)', 'interpreter','tex');
+ylabel(flame_ax,'HAB (m)', 'interpreter','tex');
+hold(flame_ax,'on');
+
+% PSD aggreate plot
+n_ax = uiaxes(gl);
+n_ax.Layout.Row = 2;
+n_ax.Layout.Column = 2;
+
+%priamry particles
+np_ax = uiaxes(gl);
+np_ax.Layout.Row = 3;
+np_ax.Layout.Column = 2;
+
+% eta slider
+eta_slider = uislider(gl);
+eta_slider.Value = 0.36;
+eta_slider.Layout.Row = 1;
+eta_slider.Layout.Column = 1;
+eta_slider.Limits = [0,0.8];
+
+
+
+
+
+
+% intiial plotting
+eta = 0.36;
+for s = [1:length(sim_results)]
+    
+   load(sim_results{s});
+   
+   chosen_cell = eta2cell_id(eta,flame,max_soot_cells,cell_data);
+   
+   n = ni(chosen_cell,:);
+   n_p = np(chosen_cell,:);
+
+   hab = cell_data.cellcentre_0(chosen_cell +1);
+   x1 = cell_data.X1(chosen_cell);
+   x0 = cell_data.X0(chosen_cell);
+   nu_fv = cell_data.Nuc_fv(chosen_cell);
+   ox = cell_data.Oxidation_O2_fv(chosen_cell) + cell_data.Oxidation_OH_fv(chosen_cell);
+   surface_area = cell_data.Surface_area(chosen_cell);
+   g_fv = cell_data.Growth_fv(chosen_cell);
+   x01 = cell_data.X01(chosen_cell);
+   T = cell_data.T(chosen_cell);
+   
+   
+   
+   if s ==1
+       % flame first time
+       path_x = cell_data.cellcentre_0(max_soot_cells(:,1));
+       path_y = cell_data.cellcentre_1(max_soot_cells(:,1));
+       plot(flame_ax,path_y(2:end), path_x(2:end), 'r','LineWidth',2)
+       plot(flame_ax,cell_data.cellcentre_1(chosen_cell), ...
+            cell_data.cellcentre_0(chosen_cell), 'or',...
+            'MarkerSize',10, 'MarkerFaceColor', 'r');
+        
+       hold(flame_ax,'off');
+       
+       % n(v)
+       loglog(n_ax,v_m,n,'-','DisplayName',disp_names{s});
+       xlabel(n_ax,'v (m^3)' )
+       ylabel(n_ax,'n(v)       (m^-3 m^-3)')
+       hold(n_ax,'on')
+       % np(v)
+       loglog(np_ax,v_m,n_p,'-','DisplayName',disp_names{s});
+       xlabel(np_ax,'v (m^3)' )
+       ylabel(np_ax,'n_p(v)     (m^-3 m^-3)')
+       hold(np_ax,'on');
+   else     
+        loglog(n_ax,v_m,n,'-','DisplayName',disp_names{s});
+        legend(n_ax);
+        
+        loglog(np_ax,v_m,n_p,'-','DisplayName',disp_names{s});
+        legend(np_ax);
+   end  
+   
+end
+
+
+    function ValueChangingFcn(src,event)
+        eta = 
+        chosen_cell = eta2cell_id(eta,flame,max_soot_cells,cell_data);
+        
+        
+        
+    end
+
+
+
+
+
+
+
+
+
+
+end
