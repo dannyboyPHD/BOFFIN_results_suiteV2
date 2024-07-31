@@ -5,11 +5,13 @@ processed_results_dir = '/Users/danielosullivan/Desktop/FLAME_RESULTS 2/NS_flame
 
 sim_results = [{strcat(processed_results_dir, 'NS_matsu1500_sun_growth2760000.mat')}, ...
                {strcat(processed_results_dir, 'NS_tf_ISAFSAF3100000 1.mat')},...
-               {strcat(processed_results_dir, 'NS_tfJun27_3075000 1.mat')}];
+               {strcat(processed_results_dir, 'NS_tfJun27_3075000 1.mat')},...
+               {strcat(processed_results_dir,'NS_inf_fusing2525000.mat')}];
            
            
            
-disp_names = [{'Matsukawa T_a = 1500 K'}, {'Furnace Black A T_a = 5000 K'}, {'Furnace Black B, T_a = 15000 K'}];
+disp_names = [{'Matsukawa T_a = 1500 K'}, {'Furnace Black A T_a = 5000 K'},...
+    {'Furnace Black B, T_a = 15000 K'},{'Infinite fusing time'}];
 
 experimental_comparison = true;
 
@@ -183,7 +185,7 @@ end
 %% Dynamic PSD plotting
 eta = 0.55;
 
-Flame_Inter = scatteredInterpolant(cell_data.cellcentre_1, cell_data.cellcentre_0, cell_data.X1);
+Flame_Inter = scatteredInterpolant(cell_data.cellcentre_1, cell_data.cellcentre_0, cell_data.H2O);
 
 x_plot = linspace(min(cell_data.cellcentre_1),max(cell_data.cellcentre_1),100);
 y_plot = linspace(min(cell_data.cellcentre_0),max(cell_data.cellcentre_0),200);
@@ -193,7 +195,15 @@ y_plot = linspace(min(cell_data.cellcentre_0),max(cell_data.cellcentre_0),200);
 Z = Flame_Inter(X,Y);
 
 % chosen_cell = 175;
-figure;
+
+
+dynamic = true;
+
+if dynamic
+    
+    build_flame_viewer;
+else
+    figure;
 
 for s = [1:length(sim_results)]
     
@@ -202,7 +212,8 @@ for s = [1:length(sim_results)]
    chosen_cell = eta2cell_id(eta,flame,max_soot_cells,cell_data);
     
    n = ni(chosen_cell,:);
-   n_p = np(chosen_cell,:);
+
+  n_p = np(chosen_cell,:);
 
    hab = cell_data.cellcentre_0(chosen_cell +1);
    x1 = cell_data.X1(chosen_cell);
@@ -269,6 +280,8 @@ for s = [1:length(sim_results)]
             'MarkerSize',8, 'MarkerFaceColor', 'r');
         hold off
    end  
+end
+
 end
 
 

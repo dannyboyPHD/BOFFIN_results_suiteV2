@@ -15,7 +15,7 @@ experimental_comparison = true;
 
 % Static Plots
 integrated_soot_VF = false;
-max_soot_path      = false;
+max_soot_path      = true;
 centreline         = false;
 radial             = false;
 
@@ -64,6 +64,9 @@ for s = [1:length(sim_results)]
         hold on
         plot(HABs, int_SVF, 'k')
         hold off
+         if s == length(sim_results)
+            legend(disp_names(:));
+        end
     end
 
     if exist('max_soot_fv') && max_soot_path
@@ -74,6 +77,9 @@ for s = [1:length(sim_results)]
         sp = spap2(20,5,HABs, max_soot_cells(:,3));
         fnplt(sp)
         hold off
+         if s == length(sim_results)
+            legend(disp_names(:));
+        end
     end
 
     if exist('max_soot_dp_av') && max_soot_path
@@ -85,6 +91,9 @@ for s = [1:length(sim_results)]
         fnplt(sp)
         axis([0,0.08,0,8*10^-8])
         hold off
+         if s == length(sim_results)
+            legend(disp_names(:));
+        end
     end
 
     if exist('max_soot_nav') && max_soot_path
@@ -96,6 +105,9 @@ for s = [1:length(sim_results)]
         fnplt(sp)
         axis([0.01,0.06,1,1000]);
         hold off
+        if s == length(sim_results)
+            legend(disp_names(:));
+        end
     end
 
     % Centreline
@@ -171,7 +183,7 @@ end
 %% Dynamic PSD plotting
 eta = 0.55;
 
-Flame_Inter = scatteredInterpolant(cell_data.cellcentre_1, cell_data.cellcentre_0, cell_data.X1);
+Flame_Inter = scatteredInterpolant(cell_data.cellcentre_1, cell_data.cellcentre_0, cell_data.H2O);
 
 x_plot = linspace(min(cell_data.cellcentre_1),max(cell_data.cellcentre_1),100);
 y_plot = linspace(min(cell_data.cellcentre_0),max(cell_data.cellcentre_0),200);
@@ -181,7 +193,15 @@ y_plot = linspace(min(cell_data.cellcentre_0),max(cell_data.cellcentre_0),200);
 Z = Flame_Inter(X,Y);
 
 % chosen_cell = 175;
-figure;
+
+
+dynamic = true;
+
+if dynamic
+    
+    build_flame_viewer;
+else
+    figure;
 
 for s = [1:length(sim_results)]
     
@@ -202,8 +222,8 @@ for s = [1:length(sim_results)]
    x01 = cell_data.X01(chosen_cell);
    T = cell_data.T(chosen_cell);
    
-   path_x = cell_data.cellcentre_0(max_soot_cells(:,1));
-   path_y = cell_data.cellcentre_1(max_soot_cells(:,1));
+   path_x = cell_data.cellcentre_0(max_soot_cells(:,1)+1);
+   path_y = cell_data.cellcentre_1(max_soot_cells(:,1)+1);
    
    if s ==1
         
@@ -211,12 +231,12 @@ for s = [1:length(sim_results)]
         subplot(2,2,2);
         loglog(v_m,n,'-','DisplayName',disp_names{s});
         xlabel('v (m^3)' )
-        ylabel('n(v) (m^-3 m^-3)')
+        ylabel('n(v)       (m^-3 m^-3)')
         
         subplot(2,2,4);
         loglog(v_m,n_p,'-','DisplayName',disp_names{s});
         xlabel('v (m^3)' )
-        ylabel('n(v) (m^-3 m^-3)')
+        ylabel('n_p(v)     (m^-3 m^-3)')
 
         
         subplot(2,2,[1,3] );
@@ -236,10 +256,7 @@ for s = [1:length(sim_results)]
         hold off
 
 
-   else
-       
-
-     
+   else     
         subplot(2,2,2);
         hold on 
         loglog(v_m,n,'-','DisplayName',disp_names{s});
@@ -259,21 +276,73 @@ for s = [1:length(sim_results)]
             cell_data.cellcentre_0(chosen_cell), 'or',...
             'MarkerSize',8, 'MarkerFaceColor', 'r');
         hold off
-        
-       
    end  
 end
 
+end
 
 
-
-
-
-
-
-
-
-
+% for s = [1:length(sim_results)]
+%     
+%    load(sim_results{s});
+%    
+%    chosen_cell = eta2cell_id(eta,flame,max_soot_cells,cell_data);
+%    
+%    n = ni(chosen_cell,:);
+%    n_p = np(chosen_cell,:);
+% 
+%    hab = cell_data.cellcentre_0(chosen_cell +1);
+%    x1 = cell_data.X1(chosen_cell);
+%    x0 = cell_data.X0(chosen_cell);
+%    nu_fv = cell_data.Nuc_fv(chosen_cell);
+%    ox = cell_data.Oxidation_O2_fv(chosen_cell) + cell_data.Oxidation_OH_fv(chosen_cell);
+%    surface_area = cell_data.Surface_area(chosen_cell);
+%    g_fv = cell_data.Growth_fv(chosen_cell);
+%    x01 = cell_data.X01(chosen_cell);
+%    T = cell_data.T(chosen_cell);
+%    
+%    
+%    
+%    if s ==1
+%        % flame first time
+%        path_x = cell_data.cellcentre_0(max_soot_cells(:,1));
+%        path_y = cell_data.cellcentre_1(max_soot_cells(:,1));
+%        plot(flame_ax,path_y(2:end), path_x(2:end), 'r','LineWidth',2)
+%        plot(flame_ax,cell_data.cellcentre_1(chosen_cell), ...
+%             cell_data.cellcentre_0(chosen_cell), 'or',...
+%             'MarkerSize',10, 'MarkerFaceColor', 'r');
+%         
+%        hold(flame_ax,'off');
+%        
+%        % n(v)
+%        loglog(n_ax,v_m,n,'-','DisplayName',disp_names{s});
+%        xlabel(n_ax,'v (m^3)' )
+%        ylabel(n_ax,'n(v)       (m^-3 m^-3)')
+%        hold(n_ax,'on')
+%        % np(v)
+%        loglog(np_ax,v_m,n_p,'-','DisplayName',disp_names{s});
+%        xlabel(np_ax,'v (m^3)' )
+%        ylabel(np_ax,'n_p(v)     (m^-3 m^-3)')
+%        hold(np_ax,'on');
+%    else     
+%         loglog(n_ax,v_m,n,'-','DisplayName',disp_names{s});
+%         legend(n_ax);
+%         
+%         loglog(np_ax,v_m,n_p,'-','DisplayName',disp_names{s});
+%         legend(np_ax);
+%    end  
+%    
+% end
+% 
+% 
+% 
+% 
+% 
+% 
+% 
+% 
+% 
+% 
 
 
 
